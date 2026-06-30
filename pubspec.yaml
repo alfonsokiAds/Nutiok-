@@ -1,0 +1,50 @@
+name: nutiok_app
+description: Aplicativo movil para el manejo de la nutricion en horarios academicos (NUTIOK)
+publish_to: 'none'
+
+version: 2.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.3.1
+  flutter_svg: ^2.2.0
+  provider: ^6.1.5+1
+  shared_preferences: ^2.5.3
+
+  # Sprint 1 - Autenticacion con Supabase
+  supabase_flutter: ^2.8.4
+
+  # Sprint 2 - Notificaciones locales
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.10.0
+
+  # Sprint 3 - Mapa con Google Maps
+  google_maps_flutter: ^2.14.2
+  geolocator: ^13.0.2
+
+  # Seguridad
+  flutter_secure_storage: ^9.2.4
+  crypto: ^3.0.6
+
+  # Utilidades
+  intl: ^0.19.0
+  uuid: ^4.5.1
+  flutter_dotenv: ^6.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - .env
