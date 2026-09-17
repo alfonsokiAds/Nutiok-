@@ -224,10 +224,7 @@ class _RecipeSearchScreenState extends State<RecipeSearchScreen> {
       appBar: AppBar(
         backgroundColor: AppTheme.backgroundColor,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF2E7D32)),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        automaticallyImplyLeading: false,
         title: Text(
           'Recetario',
           style: GoogleFonts.poppins(
@@ -516,67 +513,65 @@ class _RecipeSearchScreenState extends State<RecipeSearchScreen> {
                                       // Difficulty badge, time, favorite
                                       Row(
                                         children: [
-                                          // Difficulty badge
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 3,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: _difficultyColor(
-                                                      recipe.difficulty)
-                                                  .withValues(alpha: 0.12),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            child: Text(
-                                              _difficultyLabel(
-                                                  recipe.difficulty),
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w600,
-                                                color: _difficultyColor(
-                                                    recipe.difficulty),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-
-                                          // Prep time
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.schedule_rounded,
-                                                size: 13,
-                                                color: Colors.grey.shade500,
-                                              ),
-                                              const SizedBox(width: 3),
-                                              Text(
-                                                recipe.prepTime,
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: 11,
-                                                  color: Colors.grey.shade600,
+                                          Expanded(
+                                            child: Wrap(
+                                              spacing: 8,
+                                              runSpacing: 4,
+                                              crossAxisAlignment: WrapCrossAlignment.center,
+                                              children: [
+                                                // Difficulty badge
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 3,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: _difficultyColor(recipe.difficulty)
+                                                        .withValues(alpha: 0.12),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: Text(
+                                                    _difficultyLabel(recipe.difficulty),
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: _difficultyColor(recipe.difficulty),
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
+                                                // Prep time
+                                                Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons.schedule_rounded,
+                                                      size: 13,
+                                                      color: Colors.grey.shade500,
+                                                    ),
+                                                    const SizedBox(width: 3),
+                                                    Text(
+                                                      recipe.prepTime,
+                                                      style: GoogleFonts.poppins(
+                                                        fontSize: 11,
+                                                        color: Colors.grey.shade600,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
                                           ),
-
-                                          const Spacer(),
-
                                           // Favorite heart
                                           GestureDetector(
                                             onTap: () {
-                                              provider.toggleRecipeFavorite(
-                                                  recipe.id);
+                                              provider.toggleRecipeFavorite(recipe.id);
                                             },
                                             child: AnimatedSwitcher(
-                                              duration: const Duration(
-                                                  milliseconds: 250),
+                                              duration: const Duration(milliseconds: 250),
                                               child: Icon(
                                                 isFavorite
                                                     ? Icons.favorite_rounded
-                                                    : Icons
-                                                        .favorite_border_rounded,
+                                                    : Icons.favorite_border_rounded,
                                                 size: 22,
                                                 color: isFavorite
                                                     ? const Color(0xFFFF6B35)
@@ -603,7 +598,6 @@ class _RecipeSearchScreenState extends State<RecipeSearchScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavBar(currentIndex: 1, onTap: (index) {}),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showSuggestRecipeDialog,
         backgroundColor: const Color(0xFFFF6B35),

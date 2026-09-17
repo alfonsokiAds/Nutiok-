@@ -64,8 +64,7 @@ class RecipeModel {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
+    final map = <String, dynamic>{
       'name': name,
       'description': description,
       'category': category,
@@ -81,6 +80,10 @@ class RecipeModel {
       'fat': fat,
       'is_favorite': isFavorite,
     };
+    if (id.isNotEmpty) {
+      map['id'] = id;
+    }
+    return map;
   }
 
   /// Alias para compatibilidad - difficulty como String

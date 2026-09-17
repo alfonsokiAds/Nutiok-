@@ -34,7 +34,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       return 'La nueva contraseña es obligatoria';
     }
     if (value.length < 8) {
-      return 'La contraseña debe tener al menos 8 caracteres';
+      return 'Mínimo 8 caracteres';
+    }
+    final regex = RegExp(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).{8,}$');
+    if (!regex.hasMatch(value)) {
+      return 'Debe incluir mayúsculas, minúsculas, números y símbolos';
     }
     return null;
   }
@@ -402,6 +406,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           const SizedBox(height: 4),
           _buildRequirementRow(
             icon: Icons.check_circle_outline,
+            text: 'Mayúsculas, minúsculas, números y símbolos',
+          ),
+          const SizedBox(height: 4),
+          _buildRequirementRow(
+            icon: Icons.check_circle_outline,
             text: 'Las contraseñas deben coincidir',
           ),
         ],
@@ -412,14 +421,20 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   /// Fila individual de requisito
   Widget _buildRequirementRow({required IconData icon, required String text}) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: NutiokTheme.primaryOrange),
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(icon, size: 16, color: NutiokTheme.primaryOrange),
+        ),
         const SizedBox(width: 8),
-        Text(
-          text,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.grey.shade600,
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+            ),
           ),
         ),
       ],

@@ -257,27 +257,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
     return '$minutes min';
   }
 
-  /// Navega a las pantallas según el índice del BottomNavBar
-  void _navigateTo(int index) {
-    switch (index) {
-      case 0:
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
-        break;
-      case 1:
-        Navigator.pushNamed(context, '/recipes');
-        break;
-      case 2:
-        Navigator.pushNamed(context, '/reminders');
-        break;
-      case 3:
-        // Ya estamos en la pantalla de mapa
-        break;
-      case 4:
-        Navigator.pushNamed(context, '/profile');
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -294,10 +273,7 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
         backgroundColor: NutiokTheme.primaryGreen,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.my_location_rounded, color: Colors.white),
@@ -380,10 +356,6 @@ class _MapScreenState extends State<MapScreen> with TickerProviderStateMixin {
             ),
           ),
         ],
-      ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: 3,
-        onTap: _navigateTo,
       ),
     );
   }

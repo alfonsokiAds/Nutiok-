@@ -227,9 +227,10 @@ class _WelcomeOnboardingScreenState extends State<WelcomeOnboardingScreen>
         position: _slideAnimation,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
 
               // ── Ilustración principal ──
               _buildIllustration(page, screenSize, isActive),
@@ -275,11 +276,11 @@ class _WelcomeOnboardingScreenState extends State<WelcomeOnboardingScreen>
               ),
             ],
           ),
+          ),
         ),
       ),
     );
   }
-
   /// Construye la ilustración decorativa para cada página
   Widget _buildIllustration(
     Map<String, dynamic> page,

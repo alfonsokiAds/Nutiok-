@@ -24,7 +24,7 @@ class AuthService {
 
       // Validar contrasena
       if (!_isValidPassword(password)) {
-        return (user: null, error: 'La contrasena debe tener minimo 8 caracteres');
+        return (user: null, error: 'La contrasena debe tener al menos 8 caracteres, incluir mayúsculas, números y símbolos');
       }
 
       // Registrar en Supabase Auth
@@ -33,6 +33,11 @@ class AuthService {
         password: password,
         data: {'full_name': fullName},
       );
+
+      // Si identities está vacío, significa que el usuario ya existe (por privacidad Supabase devuelve éxito falso)
+      if (response.user != null && (response.user!.identities == null || response.user!.identities!.isEmpty)) {
+        return (user: null, error: 'Este correo electrónico ya está registrado en el sistema.');
+      }
 
       // Crear perfil en la tabla profiles
       if (response.user != null) {
@@ -44,8 +49,6 @@ class AuthService {
             'updated_at': DateTime.now().toIso8601String(),
           });
         } catch (e) {
-          // Si falla al insertar el perfil (por ej. ya existe por un trigger),
-          // ignoramos el error para no afectar el flujo de registro
           print('Nota: Error al insertar perfil (posible trigger): $e');
         }
       }
@@ -53,11 +56,11 @@ class AuthService {
       return (user: response.user, error: null);
     } on AuthException catch (e) {
       if (e.message.contains('already registered')) {
-        return (user: null, error: 'Este correo ya esta registrado');
+        return (user: null, error: 'Este correo electrónico ya está registrado.');
       }
       return (user: null, error: 'Error de registro: ${e.message}');
     } catch (e) {
-      return (user: null, error: 'Error al registrarse: $e');
+      return (user: null, error: 'Error inesperado al registrarse: $e');
     }
   }
 
@@ -80,12 +83,12 @@ class AuthService {
 
       return (user: response.user, error: null);
     } on AuthException catch (e) {
-      if (e.message.contains('Invalid login')) {
-        return (user: null, error: 'Correo o contrasena incorrectos');
+      if (e.message.contains('Invalid login credentials')) {
+        return (user: null, error: 'Correo o contraseña incorrectos.');
       }
-      return (user: null, error: 'Error al iniciar sesion: ${e.message}');
+      return (user: null, error: 'Error al iniciar sesión: ${e.message}');
     } catch (e) {
-      return (user: null, error: 'Error inesperado al iniciar sesion');
+      return (user: null, error: 'Error inesperado al iniciar sesión.');
     }
   }
 
@@ -119,7 +122,7 @@ class AuthService {
       }
 
       if (!_isValidPassword(newPassword)) {
-        return (success: false, error: 'La contrasena debe tener minimo 8 caracteres');
+        return (success: false, error: 'La contrasena debe tener al menos 8 caracteres, incluir mayúsculas, números y símbolos');
       }
 
       await _supabase.auth.updateUser(
@@ -128,22 +131,35 @@ class AuthService {
 
       return (success: true, error: null);
     } catch (e) {
-      return (success: false, error: 'Error al cambiar la contrasena');
+      print('Error real al cambiar la contraseña: $e');
+      return (success: false, error: 'Error: $e');
     }
   }
 
   /// Obtener perfil del usuario actual
   Future<UserModel?> getCurrentProfile() async {
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return null;
+    final user = _supabase.auth.currentUser;
+    if (user == null) return null;
 
-    final response = await _supabase
-        .from(SupabaseConfig.profilesTable)
-        .select()
-        .eq('id', userId)
-        .single();
+    try {
+      final response = await _supabase
+          .from(SupabaseConfig.profilesTable)
+          .select()
+          .eq('id', user.id)
+          .single();
 
-    return UserModel.fromJson(response);
+      return UserModel.fromJson(response);
+    } catch (e) {
+      print('Error al obtener perfil de tabla, usando metadata: $e');
+      // Fallback a los datos de auth si la tabla profiles falla o no tiene el registro
+      return UserModel(
+        id: user.id,
+        email: user.email ?? '',
+        fullName: user.userMetadata?['full_name'] as String?,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    }
   }
 
   /// Actualizar perfil del usuario
@@ -176,6 +192,8 @@ class AuthService {
   }
 
   bool _isValidPassword(String password) {
-    return password.length >= 8;
+    // Al menos 8 caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 carácter especial
+    final regex = RegExp(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).{8,}$');
+    return regex.hasMatch(password);
   }
 }

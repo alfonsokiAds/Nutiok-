@@ -23,6 +23,7 @@ class SupabaseConfig {
   static const String remindersTable = 'reminders';
   static const String recipesTable = 'recipes';
   static const String favoritesTable = 'favorites';
+  static const String schedulesTable = 'user_schedules';
 
   /// Bucket de almacenamiento
   static const String avatarBucket = 'avatars';

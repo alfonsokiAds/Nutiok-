@@ -48,7 +48,10 @@ CREATE POLICY "Users can insert own profile"
 
 -- Trigger para crear perfil automaticamente al registrar usuario
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $$
 BEGIN
     INSERT INTO public.profiles (id, email, full_name)
     VALUES (
@@ -58,7 +61,12 @@ BEGIN
     );
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
+
+-- Seguridad adicional: evitar que usuarios de la API ejecuten la función directamente
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM authenticated;
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon;
 
 CREATE OR REPLACE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users

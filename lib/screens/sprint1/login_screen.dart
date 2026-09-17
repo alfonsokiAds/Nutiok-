@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../app_theme.dart';
 import '../../providers/auth_provider.dart';
 import 'home_screen.dart';
+import '../main_layout_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -68,16 +69,25 @@ class _LoginScreenState extends State<LoginScreen> {
       // Navegar a la pantalla principal
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const MainLayoutScreen()),
       );
     } else {
       final errorMessage =
           authProvider.errorMessage ?? 'Error al iniciar sesión. Intenta de nuevo.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errorMessage),
+          content: Text(
+            errorMessage,
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+          ),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
         ),
       );
     }

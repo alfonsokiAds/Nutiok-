@@ -40,8 +40,7 @@ class NoteModel {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
+    final map = <String, dynamic>{
       'user_id': userId,
       'title': title,
       'content': content,
@@ -49,6 +48,10 @@ class NoteModel {
       'meal_date': mealDate.toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
     };
+    if (id.isNotEmpty) {
+      map['id'] = id;
+    }
+    return map;
   }
 
   NoteModel copyWith({

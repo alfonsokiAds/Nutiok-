@@ -14,6 +14,7 @@ import 'services/notification_service.dart';
 import 'screens/sprint3/welcome_onboarding_screen.dart';
 import 'screens/sprint1/welcome_screen.dart';
 import 'screens/sprint1/home_screen.dart';
+import 'screens/main_layout_screen.dart';
 import 'screens/sprint1/change_password_screen.dart';
 
 void main() async {
@@ -137,8 +138,8 @@ class _AppEntryPointState extends State<_AppEntryPoint> {
         debugPrint(
             '[APP] 📱 BUILD Consumer - Autenticado: ${authProvider.isAuthenticated}');
         if (authProvider.isAuthenticated) {
-          debugPrint('[APP] 🏠 Mostrando HomeScreen...');
-          return const HomeScreen();
+          debugPrint('[APP] 🏠 Mostrando MainLayoutScreen...');
+          return const MainLayoutScreen();
         }
         debugPrint('[APP] 🔐 Mostrando WelcomeScreen (Login)...');
         return const WelcomeScreen();

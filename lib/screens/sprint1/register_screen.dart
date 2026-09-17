@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../app_theme.dart';
 import '../../providers/auth_provider.dart';
 import 'home_screen.dart';
+import '../main_layout_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -46,16 +47,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!emailRegex.hasMatch(value.trim())) {
       return 'Ingresa un correo electrónico válido';
     }
+    if (value.trim().toLowerCase().endsWith('@gmai.com') || value.trim().toLowerCase().endsWith('@gmail.co')) {
+      return '¿Quisiste decir @gmail.com? Verifica el dominio';
+    }
     return null;
   }
 
-  /// Valida la contraseña (mínimo 8 caracteres)
+  /// Valida la contraseña (mínimo 8 caracteres, números y mayúsculas)
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'La contraseña es obligatoria';
     }
-    if (value.length < 8) {
-      return 'La contraseña debe tener al menos 8 caracteres';
+    final passwordRegex = RegExp(r'^(?=.*[A-Z])(?=.*\d).{8,}$');
+    if (!passwordRegex.hasMatch(value)) {
+      return 'Debe tener min. 8 caracteres, números y mayúsculas';
     }
     return null;
   }
@@ -107,16 +112,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // Navegar a la pantalla principal
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const MainLayoutScreen()),
       );
     } else {
       final errorMessage =
           authProvider.errorMessage ?? 'Error al registrar. Intenta de nuevo.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(errorMessage),
+          content: Text(
+            errorMessage,
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+          ),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'OK',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
         ),
       );
     }

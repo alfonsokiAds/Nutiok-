@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'dart:ui';
 import '../../app_theme.dart';
 import '../../providers/notes_provider.dart';
-import '../../widgets/custom_card.dart';
 import '../../models/note.dart';
 
 class NotesScreen extends StatefulWidget {
@@ -13,13 +13,27 @@ class NotesScreen extends StatefulWidget {
   State<NotesScreen> createState() => _NotesScreenState();
 }
 
-class _NotesScreenState extends State<NotesScreen> {
+class _NotesScreenState extends State<NotesScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<NotesProvider>().loadNotes();
+      context.read<NotesProvider>().loadNotes().then((_) {
+        _animationController.forward();
+      });
     });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Color _mealTypeColor(String mealType) {
@@ -74,322 +88,171 @@ class _NotesScreenState extends State<NotesScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            return Container(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.88,
-              ),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
+            return BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.9,
                 ),
-              ),
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  left: 24,
-                  right: 24,
-                  top: 16,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(30),
+                    topRight: Radius.circular(30),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      spreadRadius: 5,
+                    )
+                  ],
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Handle bar
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Title
-                    Text(
-                      isEditing ? 'Editar Nota' : 'Nueva Nota',
-                      style: GoogleFonts.poppins(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF2E7D32),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    Form(
-                      key: formKey,
-                      child: Column(
-                        children: [
-                          // Title field
-                          TextFormField(
-                            controller: titleController,
-                            decoration: InputDecoration(
-                              labelText: 'Título',
-                              prefixIcon: const Icon(
-                                Icons.title_rounded,
-                                color: Color(0xFF2E7D32),
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF2E7D32),
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                            style: GoogleFonts.poppins(fontSize: 15),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'El título es obligatorio';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Content field
-                          TextFormField(
-                            controller: contentController,
-                            decoration: InputDecoration(
-                              labelText: 'Contenido',
-                              prefixIcon: const Padding(
-                                padding: EdgeInsets.only(bottom: 48),
-                                child: Icon(
-                                  Icons.notes_rounded,
-                                  color: Color(0xFF2E7D32),
-                                ),
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF2E7D32),
-                                  width: 2,
-                                ),
-                              ),
-                              alignLabelWithHint: true,
-                            ),
-                            style: GoogleFonts.poppins(fontSize: 14),
-                            maxLines: 5,
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'El contenido es obligatorio';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Meal type selector
-                          DropdownButtonFormField<String>(
-                            initialValue: selectedMealType,
-                            decoration: InputDecoration(
-                              labelText: 'Tipo de comida',
-                              prefixIcon: const Icon(
-                                Icons.category_rounded,
-                                color: Color(0xFF2E7D32),
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFF2E7D32),
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: Colors.grey.shade800,
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'Desayuno',
-                                child: Text('Desayuno'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Almuerzo',
-                                child: Text('Almuerzo'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Cena',
-                                child: Text('Cena'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Snack',
-                                child: Text('Snack'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'Otro',
-                                child: Text('Otro'),
-                              ),
-                            ],
-                            onChanged: (value) {
-                              if (value != null) {
-                                setSheetState(() {
-                                  selectedMealType = value;
-                                });
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Date picker
-                          InkWell(
-                            onTap: () async {
-                              final pickedDate = await showDatePicker(
-                                context: context,
-                                initialDate: selectedDate,
-                                firstDate: DateTime(2023),
-                                lastDate: DateTime(2030),
-                                builder: (context, child) {
-                                  return Theme(
-                                    data: Theme.of(context).copyWith(
-                                      colorScheme: const ColorScheme.light(
-                                        primary: Color(0xFF2E7D32),
-                                        onPrimary: Colors.white,
-                                        surface: Colors.white,
-                                        onSurface: Colors.black87,
-                                      ),
-                                    ),
-                                    child: child!,
-                                  );
-                                },
-                              );
-                              if (pickedDate != null) {
-                                setSheetState(() {
-                                  selectedDate = pickedDate;
-                                });
-                              }
-                            },
-                            child: InputDecorator(
-                              decoration: InputDecoration(
-                                labelText: 'Fecha',
-                                prefixIcon: const Icon(
-                                  Icons.calendar_today_rounded,
-                                  color: Color(0xFF2E7D32),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    _formatDate(selectedDate),
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      color: Colors.grey.shade800,
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.arrow_drop_down_rounded,
-                                    color: Colors.grey,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Action buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: Colors.grey.shade300),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                            child: Text(
-                              'Cancelar',
-                              style: GoogleFonts.poppins(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(
+                    left: 24,
+                    right: 24,
+                    top: 16,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              if (formKey.currentState!.validate()) {
-                                final provider = context.read<NotesProvider>();
-                                if (isEditing) {
-                                  provider.updateNote(
-                                    note.copyWith(
-                                      title: titleController.text.trim(),
-                                      content: contentController.text.trim(),
-                                      mealType: selectedMealType,
-                                      mealDate: selectedDate,
-                                    ),
-                                  );
-                                } else {
-                                  provider.createNote(
-                                    title: titleController.text.trim(),
-                                    content: contentController.text.trim(),
-                                    mealType: selectedMealType,
-                                    mealDate: selectedDate,
-                                  );
-                                }
-                                Navigator.of(context).pop();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      isEditing
-                                          ? 'Nota actualizada ✏️'
-                                          : 'Nota creada 📝',
-                                    ),
-                                    backgroundColor: const Color(0xFF2E7D32),
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        isEditing ? 'Editar Nota' : 'Nueva Nota',
+                        style: GoogleFonts.poppins(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF2E7D32),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Form(
+                        key: formKey,
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: titleController,
+                              decoration: InputDecoration(
+                                labelText: 'Título',
+                                prefixIcon: const Icon(Icons.title_rounded, color: Color(0xFF2E7D32)),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                              ),
+                              validator: (value) => value == null || value.trim().isEmpty ? 'Requerido' : null,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: contentController,
+                              maxLines: 4,
+                              decoration: InputDecoration(
+                                labelText: 'Contenido',
+                                alignLabelWithHint: true,
+                                prefixIcon: const Padding(
+                                  padding: EdgeInsets.only(bottom: 50),
+                                  child: Icon(Icons.notes_rounded, color: Color(0xFF2E7D32)),
+                                ),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 2),
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                              ),
+                              validator: (value) => value == null || value.trim().isEmpty ? 'Requerido' : null,
+                            ),
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              value: selectedMealType,
+                              decoration: InputDecoration(
+                                labelText: 'Comida',
+                                prefixIcon: const Icon(Icons.restaurant_menu_rounded, color: Color(0xFF2E7D32)),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                filled: true,
+                                fillColor: Colors.grey.shade50,
+                              ),
+                              items: ['Desayuno', 'Almuerzo', 'Cena', 'Snack', 'Otro']
+                                  .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                                  .toList(),
+                              onChanged: (val) => setSheetState(() => selectedMealType = val!),
+                            ),
+                            const SizedBox(height: 16),
+                            InkWell(
+                              onTap: () async {
+                                final d = await showDatePicker(
+                                  context: context,
+                                  initialDate: selectedDate,
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime(2030),
+                                );
+                                if (d != null) setSheetState(() => selectedDate = d);
+                              },
+                              child: InputDecorator(
+                                decoration: InputDecoration(
+                                  labelText: 'Fecha',
+                                  prefixIcon: const Icon(Icons.calendar_today_rounded, color: Color(0xFF2E7D32)),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade50,
+                                ),
+                                child: Text(_formatDate(selectedDate), style: GoogleFonts.poppins()),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (formKey.currentState!.validate()) {
+                              final p = context.read<NotesProvider>();
+                              if (isEditing) {
+                                p.updateNote(note.copyWith(
+                                  title: titleController.text,
+                                  content: contentController.text,
+                                  mealType: selectedMealType,
+                                  mealDate: selectedDate,
+                                ));
+                              } else {
+                                p.createNote(
+                                  title: titleController.text,
+                                  content: contentController.text,
+                                  mealType: selectedMealType,
+                                  mealDate: selectedDate,
                                 );
                               }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2E7D32),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              elevation: 0,
-                            ),
-                            child: Text(
-                              isEditing ? 'Guardar' : 'Crear Nota',
-                              style: GoogleFonts.poppins(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                              Navigator.pop(context);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2E7D32),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 5,
                           ),
+                          child: Text(isEditing ? 'Actualizar Nota' : 'Guardar Nota',
+                              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -399,343 +262,147 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  void _confirmDeleteNote(BuildContext context, Note note) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: Text(
-          'Eliminar Nota',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFFD32F2F),
-          ),
-        ),
-        content: Text(
-          '¿Estás seguro de que deseas eliminar "${note.title}"? Esta acción no se puede deshacer.',
-          style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey.shade600),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(
-              'Cancelar',
-              style: GoogleFonts.poppins(color: Colors.grey),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              context.read<NotesProvider>().deleteNote(note.id);
-              Navigator.of(dialogContext).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Nota eliminada 🗑️'),
-                  backgroundColor: const Color(0xFFD32F2F),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD32F2F),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Eliminar',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
-        elevation: 0,
-        title: Text(
-          'Mis Notas',
-          style: GoogleFonts.poppins(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF2E7D32),
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: () => _showNoteDialog(),
-            icon: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32),
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(2),
-              child: const Icon(
-                Icons.add_rounded,
-                color: Colors.white,
-                size: 20,
+      backgroundColor: Colors.grey.shade100,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 120,
+            floating: true,
+            pinned: true,
+            backgroundColor: const Color(0xFF2E7D32),
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text('Mis Notas', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
+              centerTitle: true,
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF2E7D32), Color(0xFF4CAF50)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Consumer<NotesProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2E7D32)),
-              ),
-            );
-          }
-
-          final notes = provider.notes;
-
-          if (notes.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Empty state illustration
-                    Container(
-                      // Removed const here as it was causing const_with_non_const error
-                      width: 140,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        color: const Color(
-                            0x142E7D32), // Replaced withOpacity with direct alpha
-                        shape: BoxShape.circle,
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Positioned(
-                            top: 28,
-                            child: Icon(
-                              Icons.note_add_rounded,
-                              size:
-                                  60, // Replaced withOpacity with direct alpha
-                              color: const Color(0x402E7D32),
-                            ),
+          SliverToBoxAdapter(
+            child: Consumer<NotesProvider>(
+              builder: (context, provider, _) {
+                if (provider.isLoading) {
+                  return const Padding(
+                    padding: EdgeInsets.all(40.0),
+                    child: Center(child: CircularProgressIndicator(color: Color(0xFF2E7D32))),
+                  );
+                }
+                if (provider.notes.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 80.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.notes_rounded, size: 100, color: Colors.grey.shade300),
+                        const SizedBox(height: 20),
+                        Text('No hay notas aún', style: GoogleFonts.poppins(fontSize: 20, color: Colors.grey.shade600)),
+                      ],
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: provider.notes.length,
+                  itemBuilder: (context, i) {
+                    final note = provider.notes[i];
+                    return AnimatedBuilder(
+                      animation: _animationController,
+                      builder: (context, child) {
+                        return SlideTransition(
+                          position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+                              .animate(CurvedAnimation(
+                                parent: _animationController,
+                                curve: Interval(i * 0.1, 1.0, curve: Curves.easeOutBack),
+                              )),
+                          child: FadeTransition(
+                            opacity: _animationController,
+                            child: child,
                           ),
-                          Positioned(
-                            bottom: 30,
-                            right: 40,
-                            child: Icon(
-                              // Replaced withOpacity with direct alpha
-                              Icons.edit_note_rounded,
-                              size: 48,
-                              color: const Color(0x4DFF6B35),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-                    Text(
-                      '¡Sin notas aún!',
-                      style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.grey.shade700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Empieza registrando tus notas\nsobre tu alimentación diaria.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: Colors.grey.shade500,
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () => _showNoteDialog(),
-                      icon: const Icon(Icons.add_rounded, size: 20),
-                      label: Text(
-                        'Crear mi primera nota',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                        );
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5))
+                          ],
                         ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2E7D32),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 14,
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            itemCount: notes.length,
-            itemBuilder: (context, index) {
-              final note = notes[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: CustomCard(
-                  // ✅ 'const' eliminado y nombre corregido
-                  padding: EdgeInsets.zero,
-                  borderRadius: 12,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Top row: meal type badge + date + actions
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 8, 0),
-                        child: Row(
-                          children: [
-                            // Meal type badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _mealTypeColor(note.mealType ??
-                                        'Otro') // ✅ Manejo de nulo
-                                    .withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () => _showNoteDialog(note: note),
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Icon(
-                                    _mealTypeIcon(note.mealType ?? 'Otro'),
-                                    size: 14,
-                                    color:
-                                        _mealTypeColor(note.mealType ?? 'Otro'),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: _mealTypeColor(note.mealType ?? 'Otro').withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Icon(_mealTypeIcon(note.mealType ?? 'Otro'), size: 16, color: _mealTypeColor(note.mealType ?? 'Otro')),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              note.mealTypeDisplay,
+                                              style: GoogleFonts.poppins(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: _mealTypeColor(note.mealType ?? 'Otro')),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Text(_formatDate(note.date), style: GoogleFonts.poppins(color: Colors.grey, fontSize: 12)),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                        onPressed: () => context.read<NotesProvider>().deleteNote(note.id),
+                                      )
+                                    ],
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    note.mealTypeDisplay,
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: _mealTypeColor(note.mealType ??
-                                          "Otro"), // ✅ Acción 3: Manejo de nulos
-                                    ),
-                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(note.title, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                                  const SizedBox(height: 6),
+                                  Text(note.content, style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey.shade700)),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            Text(
-                              _formatDate(note.date),
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                            const Spacer(),
-                            // Edit button
-                            IconButton(
-                              onPressed: () => _showNoteDialog(note: note),
-                              icon: Icon(
-                                Icons.edit_outlined,
-                                size: 18,
-                                color: Colors.grey.shade400,
-                              ),
-                              padding: const EdgeInsets.all(6),
-                              constraints: const BoxConstraints(),
-                            ),
-                            // Delete button
-                            IconButton(
-                              onPressed: () =>
-                                  _confirmDeleteNote(context, note),
-                              icon: Icon(
-                                Icons.delete_outline_rounded,
-                                size: 18,
-                                color: Colors.grey.shade400,
-                              ),
-                              padding: const EdgeInsets.all(6),
-                              constraints: const BoxConstraints(),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Title
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                        child: Text(
-                          note.title,
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade800,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-
-                      // Content preview
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 14),
-                        child: Text(
-                          note.content,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            color: Colors.grey.shade500,
-                            height: 1.5,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
+                    );
+                  },
+                );
+              },
+            ),
+          )
+        ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _showNoteDialog(),
         backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
-        elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        icon: const Icon(Icons.add_rounded, size: 20),
-        label: Text(
-          'Nueva Nota',
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        elevation: 8,
+        child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
       ),
     );
   }

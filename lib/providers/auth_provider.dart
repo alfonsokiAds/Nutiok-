@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Provider para gestionar el estado de autenticacion
 /// Sprint 1 - HU-1 y HU-2
@@ -21,6 +22,27 @@ class AuthProvider extends ChangeNotifier {
   UserModel? get user => _currentUser;
 
   String? get errorMessage => _errorMessage;
+
+  AuthProvider() {
+    _initAuthStateListener();
+  }
+
+  void _initAuthStateListener() {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      final AuthChangeEvent event = data.event;
+      if (event == AuthChangeEvent.signedIn || event == AuthChangeEvent.initialSession) {
+        if (data.session != null) {
+          _isAuthenticated = true;
+          _currentUser = await _authService.getCurrentProfile();
+          notifyListeners();
+        }
+      } else if (event == AuthChangeEvent.signedOut) {
+        _isAuthenticated = false;
+        _currentUser = null;
+        notifyListeners();
+      }
+    });
+  }
 
   /// Verificar sesion al iniciar la app
   Future<void> checkAuth() async {

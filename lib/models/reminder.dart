@@ -13,8 +13,11 @@ class ReminderModel {
   final String time; // Formato HH:mm
   final String mealType; // desayuno, almuerzo, cena, snack
   bool isActive;
+  final bool isSmart;
   final bool repeatDaily;
   final int? dayOfWeek; // 1=Lunes, 7=Domingo, null = todos los dias
+  final DateTime? reminderDate;
+  final bool isAllDay;
   final DateTime createdAt;
 
   ReminderModel({
@@ -25,8 +28,11 @@ class ReminderModel {
     required this.time,
     required this.mealType,
     this.isActive = true,
+    this.isSmart = false,
     this.repeatDaily = true,
     this.dayOfWeek,
+    this.reminderDate,
+    this.isAllDay = false,
     required this.createdAt,
   });
 
@@ -39,24 +45,41 @@ class ReminderModel {
       time: json['time'] as String,
       mealType: json['meal_type'] as String,
       isActive: json['is_active'] as bool? ?? true,
+      isSmart: json['is_smart'] as bool? ?? false,
       repeatDaily: json['repeat_daily'] as bool? ?? true,
       dayOfWeek: json['day_of_week'] as int?,
+      reminderDate: json['reminder_date'] != null
+          ? DateTime.parse(json['reminder_date'] as String)
+          : null,
+      isAllDay: json['is_all_day'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
+    final map = <String, dynamic>{
       'user_id': userId,
       'title': title,
       'message': message,
       'time': time,
       'meal_type': mealType,
       'is_active': isActive,
+      'is_smart': isSmart,
       'repeat_daily': repeatDaily,
-      'day_of_week': dayOfWeek,
     };
+    if (dayOfWeek != null) {
+      map['day_of_week'] = dayOfWeek;
+    }
+    if (isAllDay) {
+      map['is_all_day'] = isAllDay;
+    }
+    if (reminderDate != null) {
+      map['reminder_date'] = reminderDate!.toIso8601String().split('T')[0];
+    }
+    if (id.isNotEmpty) {
+      map['id'] = id;
+    }
+    return map;
   }
 
   /// Obtener la hora como TimeOfDay
@@ -92,8 +115,11 @@ class ReminderModel {
     String? time,
     String? mealType,
     bool? isActive,
+    bool? isSmart,
     bool? repeatDaily,
     int? dayOfWeek,
+    DateTime? reminderDate,
+    bool? isAllDay,
   }) {
     return ReminderModel(
       id: id,
@@ -103,8 +129,11 @@ class ReminderModel {
       time: time ?? this.time,
       mealType: mealType ?? this.mealType,
       isActive: isActive ?? this.isActive,
+      isSmart: isSmart ?? this.isSmart,
       repeatDaily: repeatDaily ?? this.repeatDaily,
       dayOfWeek: dayOfWeek ?? this.dayOfWeek,
+      reminderDate: reminderDate ?? this.reminderDate,
+      isAllDay: isAllDay ?? this.isAllDay,
       createdAt: createdAt,
     );
   }
