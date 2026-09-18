@@ -4,8 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
-import '../../app_theme.dart';
-import '../../widgets/bottom_nav_bar.dart';
+import 'package:nutiok_app/app_theme.dart';
+import 'package:nutiok_app/widgets/bottom_nav_bar.dart';
 
 /// Pantalla de mapa de restaurantes cercanos
 /// Sprint 4 - HU-6: Búsqueda de restaurantes saludables cercanos

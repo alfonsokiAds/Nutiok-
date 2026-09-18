@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
-import '../../app_theme.dart';
+import 'package:nutiok_app/app_theme.dart';
 import '../../providers/notes_provider.dart';
 import '../../models/note.dart';
 

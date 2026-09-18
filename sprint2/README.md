@@ -57,3 +57,6 @@ Implementar sistema de notas alimentarias y recordatorios con notificaciones pus
 - [x] Notificaciones push en horarios configurados
 - [x] Recordatorios activos aun con app cerrada
 - [x] Activar/desactivar recordatorios desde configuracion
+
+## Correcciones de Errores (Post-Desarrollo)
+- **Duplicidad de Recordatorios Inteligentes:** Se solucionó una condición de carrera *(race condition)* en `RemindersProvider` que ocasionaba la creación duplicada de los recordatorios inteligentes ("Desayuno", "Almuerzo", etc.) al iniciar la aplicación rápidamente. Se implementó un bloqueo de estado (`_isCreatingDefaultReminders`) y una limpieza automática en base de datos al cargar (Supabase).

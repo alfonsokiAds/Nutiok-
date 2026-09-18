@@ -50,8 +50,29 @@ class RemindersProvider extends ChangeNotifier {
     _schedule = await _dbService.getSchedule();
 
     // Si no hay recordatorios inteligentes, creamos los por defecto
-    if (!smartReminders.any((r) => r.title == 'Desayuno')) {
-      await _createDefaultSmartReminders();
+    if (!smartReminders.any((r) => r.title == 'Desayuno') && !_isCreatingDefaultReminders) {
+      _isCreatingDefaultReminders = true;
+      try {
+        await _createDefaultSmartReminders();
+      } finally {
+        _isCreatingDefaultReminders = false;
+      }
+    }
+
+    // Limpieza automática de duplicados generados por el bug anterior
+    final seen = <String>{};
+    final duplicates = <String>[];
+    for (var r in _reminders) {
+      final key = '${r.title}_${r.time}';
+      if (seen.contains(key) && r.isSmart) {
+        duplicates.add(r.id);
+      } else {
+        seen.add(key);
+      }
+    }
+    
+    for (var id in duplicates) {
+      await deleteReminder(id);
     }
 
     _isLoading = false;
@@ -122,9 +143,28 @@ class RemindersProvider extends ChangeNotifier {
 
   /// Crear clase en el horario
   Future<void> addScheduleClass(ScheduleClassModel newClass) async {
-    final result = await _dbService.addScheduleClass(newClass);
+    final userId = _dbService.supabase.auth.currentUser?.id;
+    if (userId == null) {
+      _errorMessage = 'Debe iniciar sesión para guardar el horario';
+      notifyListeners();
+      return;
+    }
+
+    final classWithUser = ScheduleClassModel(
+      id: newClass.id,
+      userId: userId,
+      className: newClass.className,
+      dayOfWeek: newClass.dayOfWeek,
+      startTime: newClass.startTime,
+      endTime: newClass.endTime,
+    );
+
+    final result = await _dbService.addScheduleClass(classWithUser);
     if (result.scheduleClass != null) {
       _schedule.add(result.scheduleClass!);
+      notifyListeners();
+    } else {
+      _errorMessage = result.error;
       notifyListeners();
     }
   }

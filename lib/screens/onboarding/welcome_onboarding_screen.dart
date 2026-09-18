@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../app_theme.dart';
+import 'package:nutiok_app/app_theme.dart';
 
 /// Pantalla de onboarding / bienvenida
 /// Sprint 3: Tutorial introductorio de 3 páginas con animaciones

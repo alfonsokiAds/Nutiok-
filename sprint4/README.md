@@ -50,6 +50,9 @@ Implementar mapa de restaurantes cercanos, pruebas finales y generacion de APK.
 - [x] Detalles del restaurante al seleccionar
 - [x] Ubicacion en el mapa dentro del app
 
+## Correcciones de Errores (Post-Desarrollo)
+- **Error al Guardar el Horario de Clases (Supabase):** Se corrigió un error silencioso en `RemindersProvider.addScheduleClass` donde el ID del usuario (`userId`) se estaba enviando como vacío (`''`). Esto causaba que la política RLS de Supabase rechazara la inserción en la tabla `schedules`. Ahora el provider inyecta automáticamente el ID del usuario autenticado en el objeto `ScheduleClassModel` antes de enviarlo al `DatabaseService`.
+
 ## Buffer Final (Semana 13)
 - Ajustes finales al APK
 - Grabacion del video demo (max 2 min)

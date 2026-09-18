@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../../app_theme.dart';
-import '../../widgets/bottom_nav_bar.dart';
+import 'package:nutiok_app/app_theme.dart';
+import 'package:nutiok_app/widgets/bottom_nav_bar.dart';
 import '../../providers/auth_provider.dart';
 
-import '../sprint2/recipe_search_screen.dart';
-import '../sprint2/reminders_screen.dart';
-import '../sprint4/map_screen.dart';
-import '../sprint3/profile_screen.dart';
+import 'package:nutiok_app/screens/recipes/recipe_search_screen.dart';
+import 'package:nutiok_app/screens/reminders/reminders_screen.dart';
+import 'package:nutiok_app/screens/map/map_screen.dart';
+import 'package:nutiok_app/screens/profile/profile_screen.dart';
 import '../../providers/reminders_provider.dart';
 import '../../models/reminder.dart';
 

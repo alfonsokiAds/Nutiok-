@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../../app_theme.dart';
-import '../../widgets/bottom_nav_bar.dart';
+import 'package:nutiok_app/app_theme.dart';
+import 'package:nutiok_app/widgets/bottom_nav_bar.dart';
 import '../../widgets/custom_card.dart';
 import '../../providers/reminders_provider.dart';
 import '../../models/recipe.dart';

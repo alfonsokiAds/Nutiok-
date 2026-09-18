@@ -11,11 +11,11 @@ import 'providers/auth_provider.dart';
 import 'providers/notes_provider.dart';
 import 'providers/reminders_provider.dart';
 import 'services/notification_service.dart';
-import 'screens/sprint3/welcome_onboarding_screen.dart';
-import 'screens/sprint1/welcome_screen.dart';
-import 'screens/sprint1/home_screen.dart';
-import 'screens/main_layout_screen.dart';
-import 'screens/sprint1/change_password_screen.dart';
+import 'screens/onboarding/welcome_onboarding_screen.dart';
+import 'screens/onboarding/welcome_screen.dart';
+import 'screens/home/home_screen.dart';
+import 'screens/home/main_layout_screen.dart';
+import 'screens/auth/change_password_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

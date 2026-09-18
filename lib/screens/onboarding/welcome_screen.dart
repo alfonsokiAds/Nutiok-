@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../app_theme.dart';
-import 'login_screen.dart';
-import 'register_screen.dart';
+import 'package:nutiok_app/app_theme.dart';
+import 'package:nutiok_app/screens/auth/login_screen.dart';
+import 'package:nutiok_app/screens/auth/register_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});

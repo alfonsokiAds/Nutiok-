@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../../app_theme.dart';
+import 'package:nutiok_app/app_theme.dart';
 import '../../providers/auth_provider.dart';
-import 'home_screen.dart';
-import '../main_layout_screen.dart';
+import 'package:nutiok_app/screens/home/home_screen.dart';
+import 'package:nutiok_app/screens/home/main_layout_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
