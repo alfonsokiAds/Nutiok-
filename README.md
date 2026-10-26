@@ -3,11 +3,15 @@
 
 ---
 
-## 📲 Descarga Directa del APK (Versión Presentación v1.0)
+## 📲 Descarga Directa del APK (Última Versión - Presentación Oficial)
 
-El instalador oficial para dispositivos Android está disponible directamente en la raíz de este repositorio:
+> ⭐️ **Versión Actual:** `v1.0 (Última Versión Estable)`  
+> 🕒 **Fecha de compilación:** 26 de octubre de 2026  
+> ✅ **Estado:** Incluye **todos los últimos cambios y correcciones** (módulo de mapa con navegación GPS a Google Maps y solución definitiva a la carga de recordatorios). Probado y verificado en emulador y dispositivos físicos.
 
-📦 **[Descargar NUTIOK_v1.0_Presentacion.apk (Clic para descargar)](./NUTIOK_v1.0_Presentacion.apk?raw=true)**
+El instalador oficial para dispositivos Android está disponible para descarga directa en este enlace:
+
+📦 **[Descargar NUTIOK_v1.0_Presentacion.apk (Última Versión)](./NUTIOK_v1.0_Presentacion.apk?raw=true)**
 
 ### 📋 Guía rápida de instalación en tu teléfono:
 1. Descarga el archivo `NUTIOK_v1.0_Presentacion.apk` en tu dispositivo Android.
