@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:nutiok_app/app_theme.dart';
 import '../../providers/auth_provider.dart';
 
@@ -130,8 +131,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             ),
             child: Consumer<AuthProvider>(
               builder: (context, authProvider, _) {
-                final userEmail =
-                    authProvider.currentUser?.email ?? 'usuario@correo.com';
+                final userEmail = authProvider.currentUser?.email ??
+                    Supabase.instance.client.auth.currentUser?.email ??
+                    'usuario@correo.com';
                 return Column(
                   children: [
                     // Ícono

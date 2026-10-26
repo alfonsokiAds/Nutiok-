@@ -161,6 +161,38 @@ class AuthProvider extends ChangeNotifier {
     return true;
   }
 
+  /// Verificar codigo OTP de recuperacion y actualizar contrasena
+  Future<bool> verifyRecoveryOtpAndSetNewPassword({
+    required String email,
+    required String token,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final result = await _authService.verifyRecoveryOtpAndSetNewPassword(
+      email: email,
+      token: token,
+      newPassword: newPassword,
+      confirmPassword: confirmPassword,
+    );
+
+    _isLoading = false;
+
+    if (result.error != null) {
+      _errorMessage = result.error!;
+      notifyListeners();
+      return false;
+    }
+
+    _isAuthenticated = true;
+    _currentUser = await _authService.getCurrentProfile();
+    notifyListeners();
+    return true;
+  }
+
   /// Cambiar contrasena
   Future<bool> changePassword({
     required String newPassword,

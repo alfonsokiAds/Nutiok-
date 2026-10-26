@@ -36,6 +36,15 @@ class RemindersProvider extends ChangeNotifier {
   /// Alias para compatibilidad con pantallas que usan isLoadingRecipes
   bool get isLoadingRecipes => false; // Las recetas se cargan de forma sincrona
 
+  /// Limpiar estado y alarmas al cerrar sesión
+  void clear() {
+    _reminders = [];
+    _schedule = [];
+    _favoriteRecipeIds = [];
+    _notificationService.cancelAll();
+    notifyListeners();
+  }
+
   // =====================
   // RECORDATORIOS (HU-4)
   // =====================
@@ -73,6 +82,15 @@ class RemindersProvider extends ChangeNotifier {
     
     for (var id in duplicates) {
       await deleteReminder(id);
+    }
+
+    // Sincronizar alarmas del dispositivo con el estado guardado en Supabase
+    for (var r in _reminders) {
+      if (r.isActive) {
+        await _notificationService.scheduleReminder(r);
+      } else {
+        await _notificationService.cancelReminder(r.id.hashCode);
+      }
     }
 
     _isLoading = false;
@@ -234,7 +252,11 @@ class RemindersProvider extends ChangeNotifier {
     final result = await _dbService.updateReminder(reminder);
 
     if (result.success) {
-      await _notificationService.scheduleReminder(reminder);
+      if (reminder.isActive) {
+        await _notificationService.scheduleReminder(reminder);
+      } else {
+        await _notificationService.cancelReminder(reminder.id.hashCode);
+      }
       final index = _reminders.indexWhere((r) => r.id == reminder.id);
       if (index != -1) {
         _reminders[index] = reminder;
@@ -263,13 +285,6 @@ class RemindersProvider extends ChangeNotifier {
   /// Activar/Desactivar recordatorio
   Future<void> toggleReminder(ReminderModel reminder) async {
     final updated = reminder.copyWith(isActive: !reminder.isActive);
-
-    if (!updated.isActive) {
-      await _notificationService.cancelReminder(reminder.hashCode);
-    } else {
-      await _notificationService.scheduleReminder(updated);
-    }
-
     await updateReminder(updated);
   }
 
@@ -277,19 +292,85 @@ class RemindersProvider extends ChangeNotifier {
   // RECETAS (HU-5)
   // =====================
 
-  /// Cargar recetas desde datos locales
-  void loadRecipes() {
-    // Cargar recetas predeterminadas
-    _recipes = RecipeData.defaultRecipes
+  /// Cargar recetas desde datos locales y de Supabase
+  Future<void> loadRecipes() async {
+    // 1. Cargar recetas predeterminadas
+    final defaultList = RecipeData.defaultRecipes
         .map((json) => RecipeModel.fromJson(json))
         .toList();
+
+    // 2. Cargar recetas comunitarias/creadas desde Supabase
+    final dbList = await _dbService.getRecipes();
+
+    final existingIds = defaultList.map((r) => r.id).toSet();
+    final combined = List<RecipeModel>.from(defaultList);
+    for (var r in dbList) {
+      if (!existingIds.contains(r.id)) {
+        combined.insert(0, r); // Las de estudiantes primero
+      }
+    }
+
+    _recipes = combined;
     notifyListeners();
+  }
+
+  /// Agregar una receta creada por un estudiante
+  Future<bool> addStudentRecipe({
+    required String name,
+    required String description,
+    required String category,
+    required String difficulty,
+    required int preparationTime,
+    required List<String> ingredients,
+    required List<String> steps,
+    String? imageUrl,
+  }) async {
+    final newRecipe = RecipeModel(
+      id: '',
+      name: name,
+      description: description,
+      category: category.toLowerCase(),
+      difficulty: difficulty.toLowerCase(),
+      preparationTime: preparationTime,
+      servings: 1,
+      ingredients: ingredients,
+      steps: steps,
+      imageUrl: imageUrl ??
+          'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=500',
+    );
+
+    final result = await _dbService.createRecipe(newRecipe);
+    if (result.recipe != null) {
+      _recipes.insert(0, result.recipe!);
+      notifyListeners();
+      return true;
+    } else {
+      // Fallback local con ID temporal para disponibilidad inmediata
+      final localRecipe = RecipeModel(
+        id: 'student_${DateTime.now().millisecondsSinceEpoch}',
+        name: name,
+        description: description,
+        category: category.toLowerCase(),
+        difficulty: difficulty.toLowerCase(),
+        preparationTime: preparationTime,
+        servings: 1,
+        ingredients: ingredients,
+        steps: steps,
+        imageUrl: imageUrl ??
+            'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=500',
+      );
+      _recipes.insert(0, localRecipe);
+      notifyListeners();
+      return true;
+    }
   }
 
   /// Filtrar recetas por categoria
   List<RecipeModel> getRecipesByCategory(String category) {
-    if (category == 'todas') return _recipes;
-    return _recipes.where((r) => r.category == category).toList();
+    if (category.toLowerCase() == 'todas') return _recipes;
+    return _recipes
+        .where((r) => r.category.toLowerCase() == category.toLowerCase())
+        .toList();
   }
 
   /// Buscar recetas por nombre
@@ -339,8 +420,30 @@ class RemindersProvider extends ChangeNotifier {
   Future<void> toggleReminderActive(String reminderId, bool newValue) async {
     final index = _reminders.indexWhere((r) => r.id == reminderId);
     if (index != -1) {
-      _reminders[index].isActive = newValue;
-      await updateReminder(_reminders[index]);
+      final updated = _reminders[index].copyWith(isActive: newValue);
+      _reminders[index] = updated;
+      notifyListeners(); // Respuesta visual inmediata
+      await updateReminder(updated);
+    }
+  }
+
+  /// Activa o desactiva todos los recordatorios inteligentes en bloque
+  Future<void> toggleAllSmartReminders(bool newValue) async {
+    for (int i = 0; i < _reminders.length; i++) {
+      if (_reminders[i].isSmart) {
+        _reminders[i] = _reminders[i].copyWith(isActive: newValue);
+      }
+    }
+    notifyListeners(); // Actualización inmediata de toda la interfaz
+
+    // Persistir y actualizar notificaciones
+    for (var r in _reminders.where((r) => r.isSmart)) {
+      if (!newValue) {
+        await _notificationService.cancelReminder(r.id.hashCode);
+      } else {
+        await _notificationService.scheduleReminder(r);
+      }
+      await _dbService.updateReminder(r);
     }
   }
 }

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:nutiok_app/app_theme.dart';
 import 'package:nutiok_app/widgets/bottom_nav_bar.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/reminders_provider.dart';
 import '../../models/user.dart';
 
 /// Pantalla de perfil del usuario
@@ -245,6 +246,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (confirmed == true && mounted) {
+      context.read<RemindersProvider>().clear();
       await context.read<AuthProvider>().signOut();
       if (mounted) {
         Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);

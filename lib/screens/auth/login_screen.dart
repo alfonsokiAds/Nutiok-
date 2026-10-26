@@ -262,7 +262,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: () {
-                            Navigator.pushNamed(context, '/change-password');
+                            Navigator.pushNamed(
+                              context,
+                              '/forgot-password',
+                              arguments: _emailController.text.trim(),
+                            );
                           },
                           child: Text(
                             '¿Olvidaste tu contraseña?',

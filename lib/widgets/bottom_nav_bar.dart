@@ -76,6 +76,7 @@ class BottomNavBar extends StatelessWidget {
   }) {
     final isActive = currentIndex == index;
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => onTap(index),
       child: Column(
         mainAxisSize: MainAxisSize.min,

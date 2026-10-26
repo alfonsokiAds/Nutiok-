@@ -16,6 +16,7 @@ import 'screens/onboarding/welcome_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/main_layout_screen.dart';
 import 'screens/auth/change_password_screen.dart';
+import 'screens/auth/forgot_password_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +58,10 @@ class NutiokApp extends StatelessWidget {
       routes: {
         '/login': (context) => const WelcomeScreen(),
         '/change-password': (context) => const ChangePasswordScreen(),
+        '/forgot-password': (context) {
+          final email = ModalRoute.of(context)?.settings.arguments as String?;
+          return ForgotPasswordScreen(initialEmail: email);
+        },
       },
     );
   }

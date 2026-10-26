@@ -41,12 +41,50 @@ class NotificationService {
     );
 
     // Solicitar permisos en Android 13+
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    await requestPermission();
 
     _initialized = true;
+  }
+
+  /// Solicitar permisos de notificación explícitamente (Android 13+ e iOS)
+  Future<bool> requestPermission() async {
+    final androidImplementation = _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+    final granted =
+        await androidImplementation?.requestNotificationsPermission();
+    return granted ?? true;
+  }
+
+  /// Mostrar una notificación de prueba o instantánea
+  Future<void> showNotificationNow({
+    required String title,
+    required String message,
+  }) async {
+    await initialize();
+    const androidDetails = AndroidNotificationDetails(
+      'nutiok_meals',
+      'Recordatorios de Comida',
+      channelDescription: 'Notificaciones para recordar horarios de comida',
+      importance: Importance.max,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+    await _plugin.show(
+      DateTime.now().millisecond,
+      title,
+      message,
+      details,
+    );
   }
 
   /// Callback cuando se toca una notificacion
@@ -61,16 +99,16 @@ class NotificationService {
 
     final scheduledTime = _getNextOccurrence(reminder.time);
 
-    final androidDetails = AndroidNotificationDetails(
+    final androidDetails = const AndroidNotificationDetails(
       'nutiok_meals',
       'Recordatorios de Comida',
       channelDescription: 'Notificaciones para recordar horarios de comida',
-      importance: Importance.high,
+      importance: Importance.max,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
     );
 
-    final iosDetails = DarwinNotificationDetails(
+    final iosDetails = const DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
@@ -81,7 +119,7 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    final id = reminder.hashCode;
+    final id = reminder.id.isNotEmpty ? reminder.id.hashCode : reminder.hashCode;
 
     if (reminder.repeatDaily) {
       // Repeticion diaria

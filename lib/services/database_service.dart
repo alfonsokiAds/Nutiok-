@@ -184,6 +184,22 @@ class DatabaseService {
     }
   }
 
+  /// Crear una nueva receta (creada por un estudiante)
+  Future<({RecipeModel? recipe, String? error})> createRecipe(
+      RecipeModel recipe) async {
+    try {
+      final response = await _supabase
+          .from(SupabaseConfig.recipesTable)
+          .insert(recipe.toJson())
+          .select()
+          .single();
+      return (recipe: RecipeModel.fromJson(response), error: null);
+    } catch (e) {
+      debugPrint('Error en createRecipe: $e');
+      return (recipe: null, error: 'Error al guardar la receta: $e');
+    }
+  }
+
   /// =====================
   /// FAVORITOS (HU-5)
   /// =====================

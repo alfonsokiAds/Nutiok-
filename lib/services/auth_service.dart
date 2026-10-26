@@ -70,25 +70,41 @@ class AuthService {
     required String password,
   }) async {
     try {
+      print('Intentando signIn con correo: $email');
       final response = await _supabase.auth.signInWithPassword(
-        email: email,
+        email: email.trim(),
         password: password,
       );
 
-      // Guardar sesion de forma segura
-      if (response.user != null) {
-        await _secureStorage.write(key: 'user_id', value: response.user!.id);
-        await _secureStorage.write(key: 'user_email', value: response.user!.email);
+      print('signInWithPassword exitoso para id: ${response.user?.id}');
+
+      // Guardar sesion de forma segura (sin bloquear el login si falla el storage)
+      try {
+        if (response.user != null) {
+          await _secureStorage.write(key: 'user_id', value: response.user!.id);
+          await _secureStorage.write(key: 'user_email', value: response.user!.email);
+        }
+      } catch (storageError) {
+        print('Nota: Error no bloqueante en secureStorage: $storageError');
       }
 
       return (user: response.user, error: null);
     } on AuthException catch (e) {
+      print('AuthException en signIn: status=${e.statusCode}, msg=${e.message}');
       if (e.message.contains('Invalid login credentials')) {
         return (user: null, error: 'Correo o contraseña incorrectos.');
       }
+      if (e.message.toLowerCase().contains('email not confirmed')) {
+        return (
+          user: null,
+          error:
+              'Este correo aún no ha sido confirmado en Supabase. Revisa tu bandeja de entrada o confírmalo en el panel.',
+        );
+      }
       return (user: null, error: 'Error al iniciar sesión: ${e.message}');
-    } catch (e) {
-      return (user: null, error: 'Error inesperado al iniciar sesión.');
+    } catch (e, stack) {
+      print('Error inesperado en signIn: $e\n$stack');
+      return (user: null, error: 'Error inesperado al iniciar sesión: $e');
     }
   }
 
@@ -108,6 +124,48 @@ class AuthService {
       return (success: false, error: 'Error al enviar correo de recuperacion: ${e.message}');
     } catch (e) {
       return (success: false, error: 'Error inesperado');
+    }
+  }
+
+  /// Verificar codigo OTP de recuperacion y definir nueva contrasena
+  Future<({bool success, String? error})> verifyRecoveryOtpAndSetNewPassword({
+    required String email,
+    required String token,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      if (newPassword != confirmPassword) {
+        return (success: false, error: 'Las contraseñas no coinciden');
+      }
+      if (!_isValidPassword(newPassword)) {
+        return (success: false, error: 'La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, números y símbolos');
+      }
+
+      // 1. Verificar el token OTP de recuperacion
+      final authResponse = await _supabase.auth.verifyOTP(
+        email: email,
+        token: token.trim(),
+        type: OtpType.recovery,
+      );
+
+      if (authResponse.session == null && authResponse.user == null) {
+        return (success: false, error: 'El código de verificación es inválido o ha expirado');
+      }
+
+      // 2. Con la sesión de recuperación activa, actualizar la contraseña
+      await _supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+
+      return (success: true, error: null);
+    } on AuthException catch (e) {
+      if (e.message.contains('expired') || e.message.contains('invalid')) {
+        return (success: false, error: 'El código ingresado es incorrecto o ya expiró');
+      }
+      return (success: false, error: e.message);
+    } catch (e) {
+      return (success: false, error: 'Error al restablecer contraseña: $e');
     }
   }
 

@@ -313,11 +313,10 @@ class _RemindersScreenState extends State<RemindersScreen> with SingleTickerProv
                           children: [
                             Text('Recordatorios Inteligentes', style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
                             Switch(
-                              value: provider.smartReminders.any((r) => r.isActive),
+                              value: provider.smartReminders.isNotEmpty &&
+                                  provider.smartReminders.any((r) => r.isActive),
                               onChanged: (val) {
-                                for(var r in provider.smartReminders) {
-                                  provider.toggleReminderActive(r.id, val);
-                                }
+                                provider.toggleAllSmartReminders(val);
                               },
                               activeColor: Colors.green,
                             )
@@ -365,6 +364,16 @@ class _RemindersScreenState extends State<RemindersScreen> with SingleTickerProv
       itemCount: reminders.length,
       itemBuilder: (context, i) {
         final reminder = reminders[i];
+        final isActive = reminder.isActive;
+        final Color cardBg = isActive ? Colors.white : const Color(0xFFEBEBEB);
+        final Color textColor = isActive ? Colors.black87 : Colors.grey.shade600;
+        final Color timeColor = isActive ? const Color(0xFFFF6B35) : Colors.grey.shade500;
+        final Color iconBg = isActive
+            ? _mealTypeColor(reminder.mealType).withOpacity(0.15)
+            : Colors.grey.shade300;
+        final Color iconColor =
+            isActive ? _mealTypeColor(reminder.mealType) : Colors.grey.shade500;
+
         return AnimatedBuilder(
           animation: _animationController,
           builder: (context, child) {
@@ -383,12 +392,20 @@ class _RemindersScreenState extends State<RemindersScreen> with SingleTickerProv
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: cardBg,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey.shade100),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, spreadRadius: 2)
-              ],
+              border: Border.all(
+                color: isActive ? Colors.grey.shade100 : Colors.grey.shade300,
+              ),
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.02),
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      )
+                    ]
+                  : [],
             ),
             child: Material(
               color: Colors.transparent,
@@ -411,18 +428,18 @@ class _RemindersScreenState extends State<RemindersScreen> with SingleTickerProv
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: _mealTypeColor(reminder.mealType).withOpacity(0.15),
+                          color: iconBg,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(_mealTypeIcon(reminder.mealType), color: _mealTypeColor(reminder.mealType)),
+                        child: Icon(_mealTypeIcon(reminder.mealType), color: iconColor),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(reminder.title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)),
-                            Text(reminder.time, style: GoogleFonts.poppins(fontSize: 14, color: const Color(0xFFFF6B35), fontWeight: FontWeight.w600)),
+                            Text(reminder.title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+                            Text(reminder.time, style: GoogleFonts.poppins(fontSize: 14, color: timeColor, fontWeight: FontWeight.w600)),
                           ],
                         ),
                       ),
