@@ -95,57 +95,61 @@ class NotificationService {
 
   /// Programar un recordatorio de comida
   Future<int> scheduleReminder(ReminderModel reminder) async {
-    await initialize();
-
-    final scheduledTime = _getNextOccurrence(reminder.time);
-
-    final androidDetails = const AndroidNotificationDetails(
-      'nutiok_meals',
-      'Recordatorios de Comida',
-      channelDescription: 'Notificaciones para recordar horarios de comida',
-      importance: Importance.max,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-    );
-
-    final iosDetails = const DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    final details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
     final id = reminder.id.isNotEmpty ? reminder.id.hashCode : reminder.hashCode;
+    try {
+      await initialize();
 
-    if (reminder.repeatDaily) {
-      // Repeticion diaria
-      await _plugin.zonedSchedule(
-        id,
-        reminder.title,
-        reminder.message,
-        scheduledTime,
-        details,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        matchDateTimeComponents: DateTimeComponents.time,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+      final scheduledTime = _getNextOccurrence(reminder.time);
+
+      final androidDetails = const AndroidNotificationDetails(
+        'nutiok_meals',
+        'Recordatorios de Comida',
+        channelDescription: 'Notificaciones para recordar horarios de comida',
+        importance: Importance.max,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
       );
-    } else {
-      // Notificacion unica
-      await _plugin.zonedSchedule(
-        id,
-        reminder.title,
-        reminder.message,
-        scheduledTime,
-        details,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+
+      final iosDetails = const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
       );
+
+      final details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      if (reminder.repeatDaily) {
+        // Repeticion diaria
+        await _plugin.zonedSchedule(
+          id,
+          reminder.title,
+          reminder.message,
+          scheduledTime,
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          matchDateTimeComponents: DateTimeComponents.time,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+      } else {
+        // Notificacion unica
+        await _plugin.zonedSchedule(
+          id,
+          reminder.title,
+          reminder.message,
+          scheduledTime,
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+      }
+    } catch (e) {
+      // Ignorar fallo de programacion en entornos sin soporte (como emuladores o sin permisos)
+      // para no interrumpir el flujo visual de la app
     }
 
     return id;

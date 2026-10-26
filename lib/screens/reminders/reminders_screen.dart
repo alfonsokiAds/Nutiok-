@@ -25,8 +25,8 @@ class _RemindersScreenState extends State<RemindersScreen> with SingleTickerProv
       duration: const Duration(milliseconds: 600),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<RemindersProvider>().loadReminders().then((_) {
-        _animationController.forward();
+      context.read<RemindersProvider>().loadReminders().whenComplete(() {
+        if (mounted) _animationController.forward();
       });
     });
   }
@@ -237,7 +237,7 @@ class _RemindersScreenState extends State<RemindersScreen> with SingleTickerProv
           SliverToBoxAdapter(
             child: Consumer<RemindersProvider>(
               builder: (context, provider, _) {
-                if (provider.isLoading) {
+                if (provider.isLoading && provider.reminders.isEmpty) {
                   return const Padding(
                     padding: EdgeInsets.all(40.0),
                     child: Center(child: CircularProgressIndicator(color: Color(0xFFFF6B35))),

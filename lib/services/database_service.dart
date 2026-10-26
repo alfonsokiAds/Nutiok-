@@ -94,15 +94,20 @@ class DatabaseService {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) return [];
 
-    final response = await _supabase
-        .from(SupabaseConfig.remindersTable)
-        .select()
-        .eq('user_id', userId)
-        .order('time', ascending: true);
+    try {
+      final response = await _supabase
+          .from(SupabaseConfig.remindersTable)
+          .select()
+          .eq('user_id', userId)
+          .order('time', ascending: true);
 
-    return response
-        .map<ReminderModel>((json) => ReminderModel.fromJson(json))
-        .toList();
+      return response
+          .map<ReminderModel>((json) => ReminderModel.fromJson(json))
+          .toList();
+    } catch (e) {
+      debugPrint('Error en getReminders: $e');
+      return [];
+    }
   }
 
   /// Crear un nuevo recordatorio

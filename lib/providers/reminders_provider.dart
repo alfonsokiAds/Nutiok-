@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/reminder.dart';
 import '../models/recipe.dart';
 import '../models/schedule_class.dart';
@@ -36,6 +38,61 @@ class RemindersProvider extends ChangeNotifier {
   /// Alias para compatibilidad con pantallas que usan isLoadingRecipes
   bool get isLoadingRecipes => false; // Las recetas se cargan de forma sincrona
 
+  /// Recordatorios predeterminados iniciales para estudiantes de NUTIOK
+  static List<ReminderModel> get defaultSmartReminders {
+    final now = DateTime.now();
+    return [
+      ReminderModel(
+        id: 'smart_desayuno',
+        userId: 'local',
+        title: 'Desayuno',
+        message: '¡Hora de empezar el día con energía y nutrientes!',
+        time: '07:00',
+        mealType: 'desayuno',
+        isActive: true,
+        isSmart: true,
+        repeatDaily: true,
+        createdAt: now,
+      ),
+      ReminderModel(
+        id: 'smart_almuerzo',
+        userId: 'local',
+        title: 'Almuerzo',
+        message: '¡Momento de recargar energías con un plato balanceado!',
+        time: '13:00',
+        mealType: 'almuerzo',
+        isActive: true,
+        isSmart: true,
+        repeatDaily: true,
+        createdAt: now,
+      ),
+      ReminderModel(
+        id: 'smart_merienda',
+        userId: 'local',
+        title: 'Merienda',
+        message: 'Un snack saludable para continuar la jornada académica.',
+        time: '16:00',
+        mealType: 'snack',
+        isActive: true,
+        isSmart: true,
+        repeatDaily: true,
+        createdAt: now,
+      ),
+      ReminderModel(
+        id: 'smart_cena',
+        userId: 'local',
+        title: 'Cena',
+        message: 'Termina el día con una cena ligera y digestiva.',
+        time: '19:30',
+        mealType: 'cena',
+        isActive: true,
+        isSmart: true,
+        repeatDaily: true,
+        createdAt: now,
+      ),
+    ];
+  }
+
   /// Limpiar estado y alarmas al cerrar sesión
   void clear() {
     _reminders = [];
@@ -49,60 +106,106 @@ class RemindersProvider extends ChangeNotifier {
   // RECORDATORIOS (HU-4)
   // =====================
 
-  /// Cargar recordatorios
-  /// Cargar recordatorios y verificar si se deben crear los por defecto
+  /// Cargar recordatorios de forma segura, primero de caché local y luego de Supabase
   Future<void> loadReminders() async {
     _isLoading = true;
     notifyListeners();
 
-    _reminders = await _dbService.getReminders();
-    _schedule = await _dbService.getSchedule();
-
-    // Si no hay recordatorios inteligentes, creamos los por defecto
-    if (!smartReminders.any((r) => r.title == 'Desayuno') && !_isCreatingDefaultReminders) {
-      _isCreatingDefaultReminders = true;
-      try {
-        await _createDefaultSmartReminders();
-      } finally {
-        _isCreatingDefaultReminders = false;
+    try {
+      // 1. Cargar caché local inmediato de SharedPreferences
+      final local = await _loadLocalReminders();
+      if (local.isNotEmpty) {
+        _reminders = local;
+        _isLoading = false;
+        notifyListeners(); // Muestra los recordatorios inmediatamente al usuario sin esperar la red!
       }
-    }
 
-    // Limpieza automática de duplicados generados por el bug anterior
-    final seen = <String>{};
-    final duplicates = <String>[];
-    for (var r in _reminders) {
-      final key = '${r.title}_${r.time}';
-      if (seen.contains(key) && r.isSmart) {
-        duplicates.add(r.id);
-      } else {
-        seen.add(key);
+      // 2. Intentar consultar Supabase en segundo plano si hay usuario autenticado
+      final userId = _dbService.supabase.auth.currentUser?.id;
+      if (userId != null) {
+        try {
+          final remoteReminders = await _dbService.getReminders().timeout(
+            const Duration(seconds: 4),
+            onTimeout: () => [],
+          );
+          if (remoteReminders.isNotEmpty) {
+            _reminders = remoteReminders;
+          }
+
+          _schedule = await _dbService.getSchedule().timeout(
+            const Duration(seconds: 4),
+            onTimeout: () => [],
+          );
+        } catch (e) {
+          debugPrint('Error sincronizando con Supabase: $e');
+        }
       }
-    }
-    
-    for (var id in duplicates) {
-      await deleteReminder(id);
-    }
 
-    // Sincronizar alarmas del dispositivo con el estado guardado en Supabase
-    for (var r in _reminders) {
-      if (r.isActive) {
-        await _notificationService.scheduleReminder(r);
-      } else {
-        await _notificationService.cancelReminder(r.id.hashCode);
+      // 3. Si sigue vacío (primera vez que abre la app), cargar los 4 recordatorios predeterminados
+      if (_reminders.isEmpty) {
+        _reminders = List.from(defaultSmartReminders);
       }
-    }
 
-    _isLoading = false;
-    notifyListeners();
+      // 4. Limpieza de duplicados
+      final seen = <String>{};
+      final uniqueReminders = <ReminderModel>[];
+      for (var r in _reminders) {
+        final key = '${r.title}_${r.time}';
+        if (!seen.contains(key) || !r.isSmart) {
+          seen.add(key);
+          uniqueReminders.add(r);
+        }
+      }
+      _reminders = uniqueReminders;
+
+      // 5. Guardar en caché local
+      await _saveLocalReminders();
+
+      // 6. Programar notificaciones locales
+      for (var r in _reminders) {
+        try {
+          if (r.isActive) {
+            await _notificationService.scheduleReminder(r);
+          } else {
+            await _notificationService.cancelReminder(r.id.hashCode);
+          }
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('Error en loadReminders: $e');
+      if (_reminders.isEmpty) {
+        _reminders = List.from(defaultSmartReminders);
+      }
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
-  Future<void> _createDefaultSmartReminders() async {
-    await createReminder(title: 'Desayuno', message: '¡Hora de empezar el día con energía!', time: '07:00', mealType: 'desayuno', isSmart: true);
-    await createReminder(title: 'Almuerzo', message: '¡Momento de recargar energías!', time: '13:00', mealType: 'almuerzo', isSmart: true);
-    await createReminder(title: 'Merienda', message: 'Un pequeño snack para continuar.', time: '16:00', mealType: 'snack', isSmart: true);
-    await createReminder(title: 'Cena', message: 'Termina el día con una buena cena.', time: '19:30', mealType: 'cena', isSmart: true);
-    _reminders = await _dbService.getReminders();
+  Future<List<ReminderModel>> _loadLocalReminders() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString('nutiok_local_reminders');
+      if (jsonStr != null && jsonStr.isNotEmpty) {
+        final List<dynamic> decoded = jsonDecode(jsonStr);
+        return decoded
+            .map((item) => ReminderModel.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Error cargando recordatorios locales: $e');
+    }
+    return [];
+  }
+
+  Future<void> _saveLocalReminders() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final encoded = jsonEncode(_reminders.map((r) => r.toJson()).toList());
+      await prefs.setString('nutiok_local_reminders', encoded);
+    } catch (e) {
+      debugPrint('Error guardando recordatorios locales: $e');
+    }
   }
 
   /// Analiza los huecos en el horario y sugiere recordatorios de descanso o hidratación
@@ -196,7 +299,7 @@ class RemindersProvider extends ChangeNotifier {
     }
   }
 
-  /// Crear recordatorio
+  /// Crear recordatorio (con persistencia local y sincronización en segundo plano)
   Future<bool> createReminder({
     required String title,
     required String message,
@@ -207,15 +310,10 @@ class RemindersProvider extends ChangeNotifier {
     bool isAllDay = false,
     bool isSmart = false,
   }) async {
-    final userId = _dbService.supabase.auth.currentUser?.id;
-    if (userId == null) {
-      _errorMessage = 'Debe iniciar sesion';
-      notifyListeners();
-      return false;
-    }
+    final userId = _dbService.supabase.auth.currentUser?.id ?? 'local';
 
     final reminder = ReminderModel(
-      id: '', // Generado por Supabase
+      id: 'rem_${DateTime.now().millisecondsSinceEpoch}',
       userId: userId,
       title: title,
       message: message,
@@ -229,57 +327,73 @@ class RemindersProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
     );
 
-    final result = await _dbService.createReminder(reminder);
-
-    if (result.error != null) {
-      _errorMessage = result.error;
-      notifyListeners();
-      return false;
-    }
-
-    if (result.reminder != null) {
-      // Programar notificacion
-      await _notificationService.scheduleReminder(result.reminder!);
-      _reminders.add(result.reminder!);
-    }
-
+    // Agregar inmediatamente a la lista local
+    _reminders.add(reminder);
     notifyListeners();
+
+    // Programar notificación en el dispositivo
+    await _notificationService.scheduleReminder(reminder);
+
+    // Guardar en SharedPreferences
+    await _saveLocalReminders();
+
+    // Sincronizar con Supabase en segundo plano si está autenticado
+    if (userId != 'local') {
+      try {
+        final result = await _dbService.createReminder(reminder);
+        if (result.reminder != null) {
+          final idx = _reminders.indexWhere((r) => r.id == reminder.id);
+          if (idx != -1) {
+            _reminders[idx] = result.reminder!;
+            await _saveLocalReminders();
+          }
+        }
+      } catch (e) {
+        debugPrint('Error sincronizando recordatorio con Supabase: $e');
+      }
+    }
+
     return true;
   }
 
   /// Actualizar recordatorio
   Future<bool> updateReminder(ReminderModel reminder) async {
-    final result = await _dbService.updateReminder(reminder);
+    final index = _reminders.indexWhere((r) => r.id == reminder.id);
+    if (index != -1) {
+      _reminders[index] = reminder;
+    }
+    notifyListeners();
 
-    if (result.success) {
-      if (reminder.isActive) {
-        await _notificationService.scheduleReminder(reminder);
-      } else {
-        await _notificationService.cancelReminder(reminder.id.hashCode);
-      }
-      final index = _reminders.indexWhere((r) => r.id == reminder.id);
-      if (index != -1) {
-        _reminders[index] = reminder;
-      }
-      notifyListeners();
-      return true;
+    if (reminder.isActive) {
+      await _notificationService.scheduleReminder(reminder);
+    } else {
+      await _notificationService.cancelReminder(reminder.id.hashCode);
     }
 
-    return false;
+    await _saveLocalReminders();
+
+    if (reminder.userId != 'local') {
+      _dbService.updateReminder(reminder).catchError((_) => (success: false, error: 'error'));
+    }
+
+    return true;
   }
 
   /// Eliminar recordatorio
   Future<bool> deleteReminder(String reminderId) async {
-    final result = await _dbService.deleteReminder(reminderId);
+    await _notificationService.cancelReminder(reminderId.hashCode);
+    _reminders.removeWhere((r) => r.id == reminderId);
+    notifyListeners();
 
-    if (result.success) {
-      await _notificationService.cancelReminder(reminderId.hashCode);
-      _reminders.removeWhere((r) => r.id == reminderId);
-      notifyListeners();
-      return true;
+    await _saveLocalReminders();
+
+    if (!reminderId.startsWith('smart_') &&
+        !reminderId.startsWith('default_') &&
+        !reminderId.startsWith('rem_')) {
+      _dbService.deleteReminder(reminderId).catchError((_) => (success: false, error: 'error'));
     }
 
-    return false;
+    return true;
   }
 
   /// Activar/Desactivar recordatorio
@@ -437,6 +551,9 @@ class RemindersProvider extends ChangeNotifier {
     }
     notifyListeners(); // Actualización inmediata de toda la interfaz
 
+    // Guardar localmente
+    await _saveLocalReminders();
+
     // Persistir y actualizar notificaciones
     for (var r in _reminders.where((r) => r.isSmart)) {
       if (!newValue) {
@@ -444,7 +561,9 @@ class RemindersProvider extends ChangeNotifier {
       } else {
         await _notificationService.scheduleReminder(r);
       }
-      await _dbService.updateReminder(r);
+      if (r.userId != 'local') {
+        _dbService.updateReminder(r).catchError((_) => (success: false, error: 'error'));
+      }
     }
   }
 }
