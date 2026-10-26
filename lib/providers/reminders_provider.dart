@@ -302,11 +302,12 @@ class RemindersProvider extends ChangeNotifier {
     // 2. Cargar recetas comunitarias/creadas desde Supabase
     final dbList = await _dbService.getRecipes();
 
-    final existingIds = defaultList.map((r) => r.id).toSet();
+    // Evitar duplicados comparando por nombre normalizado
+    final existingNames = defaultList.map((r) => r.name.toLowerCase().trim()).toSet();
     final combined = List<RecipeModel>.from(defaultList);
     for (var r in dbList) {
-      if (!existingIds.contains(r.id)) {
-        combined.insert(0, r); // Las de estudiantes primero
+      if (!existingNames.contains(r.name.toLowerCase().trim())) {
+        combined.insert(0, r); // Recetas nuevas o de estudiantes
       }
     }
 
